@@ -1,5 +1,5 @@
 
-# Consignes avant de commencer:
+## Consignes avant de commencer:
 
 
 0 Se connecter à la plateforme datalab.sspcloud.fr
@@ -17,3 +17,30 @@ Rq: Ceci est optionnel car les données et fonds de carte pourront
 accès.
 
 3 Commencez le TP
+
+## En fin de TP:
+
+Pour conserver vos programmes, deux solutions:
+
+1- la solution la plus propre (vivement conseillée): utiliser un dépôt git
+
+- Se créer un compte sur github / ou gitlab si besoin
+- Pour github: Créer un Access Token (Settings -> deveoper settings -> personal acces token). ATTENTION: conserver ce token qq part car invisible ensuite (possiblité d'en régénérer un autre si perdu: pas de panique)
+
+- créer un nouveau repository vierge sur github ou gitlab
+- Dans le terminal de RStudio:
+
+cd tp_stats_sptiales
+git add -v .gitignore *.R *.Rproj
+git branch -M main
+
+
+- Sur github/gitlab récupérer l'adresse https du repo 
+
+git remote add origin + url de votre repo (https://.../ccc.git)
+git push -u origin main
+
+- sur github, vous aurez besoin de votre personal access token
+
+
+
