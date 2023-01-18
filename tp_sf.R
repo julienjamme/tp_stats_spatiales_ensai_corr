@@ -14,14 +14,25 @@ metro_sf <- st_read(
   options = "ENCODING=WINDOWS-1252"
 )
 
+# aws.s3::s3write_using(
+#   metro_sf,
+#   FUN = st_write,
+#   dsn = "commune_francemetro_2021.gpkg",
+#   layer = "commune_francemetro_2021",
+#   append = FALSE,
+#   object = "public/commune_francemetro_2021.gpkg",
+#   bucket = "julienjamme/",
+#   opts = list("region" = "")
+# )
+
 # OPTION 2: Si vous n'avez pas uploadé les données ####
 metro_sf <- aws.s3::s3read_using(
-  st_read,
-  dsn = "commune_francemetro_2021.shp", 
-  options = "ENCODING=WINDOWS-1252",
+  FUN = sf::st_read,
+  object = "/public/reg_francemetro_2021.gpkg",
   bucket = "julienjamme",
-  object = "public"
+  opts = list("region" = "")
 )
+str(metro_sf)
 
 # 2 - Résumé stat ####
 
