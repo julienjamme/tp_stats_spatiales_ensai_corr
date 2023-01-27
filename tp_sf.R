@@ -14,7 +14,7 @@ metro_sf <- st_read(
   options = "ENCODING=WINDOWS-1252"
 )
 str(metro_sf)
-
+summary(metro_sf)
 # # OPTION 2: Par téléchargement ####
 # # Téléchargement depuis un espace de stockage S3 public
 # temp_file <- download.file("")
@@ -56,6 +56,9 @@ communes_bretagne <- metro_sf %>%
   select(code, libelle, epc, dep, surf)
 
 str(communes_bretagne) 
+
+communes_bretagne %>% st_drop_geometry() %>% str()
+
 # 6 - On a conservé la géométrie ####
 
 class(communes_bretagne)
@@ -64,6 +67,10 @@ class(communes_bretagne)
 
 plot(communes_bretagne, lwd = 0.3)
 plot(communes_bretagne %>% st_geometry(), lwd = 0.3)
+ggplot() +
+  geom_sf(data = communes_bretagne, fill = "steelblue", col = "grey45") +
+  theme_void()
+  
 
 # 9 - surfaces ####
 
@@ -81,7 +88,10 @@ communes_bretagne <- communes_bretagne %>%
 str(communes_bretagne)
 
 # 11 - égalité ####
-all.equal(communes_bretagne$surf, round(as.double(communes_bretagne$surf2),2))
+all.equal(
+  communes_bretagne$surf, 
+  round(as.double(communes_bretagne$surf2),2)
+)
 
 # 12 - départements bretons ####
 
@@ -91,9 +101,11 @@ depts_bretagne <- communes_bretagne %>%
     surf = sum(surf)
   )
 str(depts_bretagne) # tjrs objet sf
-plot(depts_bretagne)
+plot(depts_bretagne %>% st_geometry())
 
 # 13 - par union des géométries ####
+
+communes_bretagne %>% st_union() %>% st_geometry() %>% plot()
 
 depts_bretagne_geo <- communes_bretagne %>% 
   group_by(dep) %>% 
@@ -113,6 +125,11 @@ st_crs(centr_depts_bretagne)
 
 plot(depts_bretagne_geo %>% st_geometry())
 plot(centr_depts_bretagne %>% st_geometry(), add = TRUE)
+
+ggplot() +
+  geom_sf(data = depts_bretagne_geo) +
+  geom_sf(data = centr_depts_bretagne)+
+  theme_void()
 
 lib_depts <- data.frame(
   code = as.character(c(22,29,35,56)), 
@@ -136,20 +153,35 @@ plot(depts_bretagne_geo %>% st_geometry())
 plot(centr_depts_bretagne %>% st_geometry(), add = TRUE)
 text(coords_centr, labels = coords_centr$lib, adj = c(0.5,-0.2))
 
+ggplot() +
+  geom_sf(data = depts_bretagne_geo) +
+  geom_sf(data = centr_depts_bretagne)+
+  geom_sf_text(
+    data = centr_depts_bretagne, 
+    aes(label = lib), size = 4
+  ) +
+  theme_void()
+
 # 15 - intersections ####
 
 communes_centr_depts <- st_intersects(
   centr_depts_bretagne,
   communes_bretagne
 )
+# st_intersects(
+#   communes_bretagne,centr_depts_bretagne
+# )
 str(communes_centr_depts)
 # Liste de 4 éléments 
 # Pour chaque centre (numéroté de 1 à 4) est indiqué l'index de la commune correspondante
 
-communes_centr_depts_sf <- purrr::map_dfr(communes_centr_depts, function(i) communes_bretagne %>% slice(i))
+# communes_centr_depts_sf <- purrr::map_dfr(communes_centr_depts, function(i) communes_bretagne %>% slice(i))
 # ou beaucoup plus directement
-communes_poly_centr_depts_sf <- communes_bretagne[unlist(communes_centr_depts),]
+communes_poly_centr_depts_sf <- 
+  communes_bretagne[unlist(communes_centr_depts),]
 str(communes_poly_centr_depts_sf)
+plot(communes_poly_centr_depts_sf %>% st_geometry())
+plot(centr_depts_bretagne %>% st_geometry(), add = TRUE)
 
 # 16 - st_intersection et st_within ####
 communes_centr_depts_sf <- st_intersection(
