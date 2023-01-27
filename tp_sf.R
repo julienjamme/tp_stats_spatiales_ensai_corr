@@ -13,26 +13,20 @@ metro_sf <- st_read(
   dsn = "fonds/commune_francemetro_2021.shp", 
   options = "ENCODING=WINDOWS-1252"
 )
+str(metro_sf)
 
-# aws.s3::s3write_using(
-#   metro_sf,
-#   FUN = st_write,
-#   dsn = "commune_francemetro_2021.gpkg",
-#   layer = "commune_francemetro_2021",
-#   append = FALSE,
-#   object = "public/commune_francemetro_2021.gpkg",
-#   bucket = "julienjamme/",
+# # OPTION 2: Par téléchargement ####
+# # Téléchargement depuis un espace de stockage S3 public
+# temp_file <- download.file("")
+# metro_sf <- aws.s3::s3read_using(
+#   FUN = sf::st_read,
+#   object = "/public/commune_francemetro_2021.gpkg",
+#   bucket = "julienjamme",
 #   opts = list("region" = "")
 # )
+# str(metro_sf)
 
-# OPTION 2: Si vous n'avez pas uploadé les données ####
-metro_sf <- aws.s3::s3read_using(
-  FUN = sf::st_read,
-  object = "/public/reg_francemetro_2021.gpkg",
-  bucket = "julienjamme",
-  opts = list("region" = "")
-)
-str(metro_sf)
+
 
 # 2 - Résumé stat ####
 
@@ -107,7 +101,8 @@ depts_bretagne_geo <- communes_bretagne %>%
     geometry = st_union(geometry)
   )
 plot(depts_bretagne_geo)
-
+str(depts_bretagne_geo)
+# on a gardé seulement dep et geometry
 
 # 14 - centroides ####
 
@@ -149,8 +144,12 @@ communes_centr_depts <- st_intersects(
 )
 str(communes_centr_depts)
 # Liste de 4 éléments 
+# Pour chaque centre (numéroté de 1 à 4) est indiqué l'index de la commune correspondante
 
 communes_centr_depts_sf <- purrr::map_dfr(communes_centr_depts, function(i) communes_bretagne %>% slice(i))
+# ou beaucoup plus directement
+communes_poly_centr_depts_sf <- communes_bretagne[unlist(communes_centr_depts),]
+str(communes_poly_centr_depts_sf)
 
 # 16 - st_intersection et st_within ####
 communes_centr_depts_sf <- st_intersection(
@@ -159,6 +158,7 @@ communes_centr_depts_sf <- st_intersection(
 )
 str(communes_centr_depts_sf)
 #fourni directement un objet sf
+# ATTENTION ici on a un fond de centroides!
 
 communes_centr_depts <- st_within(
   centr_depts_bretagne,
@@ -166,6 +166,12 @@ communes_centr_depts <- st_within(
 )
 str(communes_centr_depts)
 # là encore une liste
+
+plot(depts_bretagne_geo %>% st_geometry())
+plot(communes_poly_centr_depts_sf %>% st_geometry(), col = "red", add = TRUE)
+plot(centr_depts_bretagne %>% st_geometry(), add = TRUE)
+text(coords_centr, labels = coords_centr$lib, adj = c(0.5,-0.2))
+# expliquer le résultat visuel !
 
 # 17 - distances ####
 
@@ -183,8 +189,60 @@ distances <- st_distance(
 names(distances) <- c(22,29,35,53)
 
 # 18 - communes à moins de 20 ####
+# a buffer 
+buff_centr_sf <- st_buffer(communes_centr_depts_sf, 20000)
+buff_centr_sf %>%  str()
+buff_centr_sf %>% st_geometry() %>% plot()
+plot(communes_centr_depts_sf %>% st_geometry(), add = TRUE)
 
-st_buffer(
-  communes_bretagne, 
+#b
+# Attention: Deux résultats possibles
+# Intersection
+# Ne retenir que la partie des communes intersectantes qui est dans le buffer
+com_buff_sf <- st_intersection(
+  communes_bretagne,
+  buff_centr_sf
 )
+str(com_buff_sf)
+plot(com_buff_sf %>% st_geometry())
 
+# OU st_intersects
+# Permet de récupérer l'intégralité des polygones des communes intersectantes
+
+com_buff2_index <- st_intersects(buff_centr_sf, communes_bretagne)
+com_buff2_sf <- communes_bretagne[unlist(com_buff2_index),]
+
+library(ggplot2)
+
+ggplot() +
+  geom_sf(data = com_buff2_sf, fill = NA, colour = "grey75") +
+  geom_sf(data = com_buff_sf, fill = "steelblue") +
+  theme_void()
+
+com_buff2_sf %>% st_drop_geometry() %>%  count(dep)
+com_buff_sf %>% st_drop_geometry() %>%  count(dep)
+# même résultat en termes de nb de communes (attendu)
+
+
+# 19 - st_transform -------------------------------------------------------
+
+communes_bretagne_wgs84 <- communes_bretagne %>% 
+  st_transform(crs = 4326) %>% 
+  mutate(surf3 = st_area(geometry))
+st_crs(communes_bretagne_wgs84)
+
+par(mfcol = c(1,2))
+plot(communes_bretagne_wgs84 %>% st_geometry(), col = "steelblue")
+plot(communes_bretagne %>% st_geometry(), col = "steelblue")
+dev.off()
+
+ggplot() +
+  geom_sf(data = communes_bretagne, fill = NA) +
+  theme_void()
+
+communes_bretagne_wgs84 %>% 
+  mutate(surf3 = units::set_units(surf3, "km^2")) %>%
+  select(starts_with("surf")) %>% 
+  summary()
+
+        
