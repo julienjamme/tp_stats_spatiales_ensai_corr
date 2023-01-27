@@ -218,7 +218,8 @@ distances <- st_distance(
   # distance entre x1 et y1 puis entre x2 et y2 etc. 
   # avec FALSE, on récupère une matrice
 )
-names(distances) <- c(22,29,35,53)
+names(distances) <- c(22,29,35,56)
+
 
 # 18 - communes à moins de 20 ####
 # a buffer 
