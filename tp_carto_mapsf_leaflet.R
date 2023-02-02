@@ -290,10 +290,10 @@ mf_layout(
 # 1
 # a
 com_sf <- st_read(
-  "fonds/commune_francemetro_2021.shp",
+  "fonds/France_metro/commune_francemetro_2021.shp",
   options = "ENCODING=WINDOWS-1252"
 )
-str(comfm_sf)
+str(com_sf)
 
 
 # b
@@ -518,12 +518,16 @@ mapview(
   z = c("PART18_POP0014"),
   at = qt_part_arr,
   alpha.regions = 0.35,
-  legend.opacity = 0,
-  layer.name = "Part des moins de 14 ans (en %)",
-  label = "libelle"
+  layer.name = "Moins de 14 ans (en %)",
+  #Info affichée quand on survol le polygône => ici = libellé de la commune
+  label = "libelle",
+  # Infos affichées quand on clique sur un polygône
+  popup = leafpop::popupTable(popcomd40_sf, z = c("code","libelle","P18_POP", "PART18_POP0014"))
 ) +
   mapview(
+    # sf composé de points 
     natation_sf %>%
+      # on en profite pour transformer la variable COUVERT en facteur
       mutate(
         COUVERT = factor(
           COUVERT, 
@@ -532,12 +536,16 @@ mapview(
         )
       ), 
     z = "COUVERT",
+    # les couleurs des points selon la catégorie de la variable COUVERT
     col.regions = c("steelblue", "coral"),
-    legend.opacity = 0,
+    # transparences
     alpha = 0.8,
     alpha.regions = 0.7,
-    layer.name = "Piscines"
-  ) 
+    # Nom de la couche
+    layer.name = "Piscines",
+    # Popup: affichage quand on clique sur un point
+    popup = leafpop::popupTable(natation_sf, z = "NB_AIREJEU")
+  )
 
 
 
