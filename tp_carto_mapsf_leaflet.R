@@ -7,20 +7,27 @@ library(ggplot2)
 
 
 
+v <- 1:10
+ifelse(v %% 2 == 0, v*2, v)
+
+
+
+
+
 # Exercice 1 --------------------------------------------------------------
 
 # 1 
 pop19 <- readxl::read_xlsx("data/Pop_legales_2019.xlsx") %>% 
   # arrondissements de Paris
   mutate(
-    COM = ifelse(substr(COM,1,2) == 75, "75056", COM)
+    COM = ifelse(substr(COM,1,2) == "75", "75056", COM)
   ) %>% 
   group_by(COM) %>% 
   summarise(PMUN19 = sum(PMUN19), .groups = 'drop')
 str(pop19)
 
 metro_sf <- st_read(
-  "fonds/commune_francemetro_2021.shp", 
+  "fonds/France_metro/commune_francemetro_2021.shp", 
   options = "ENCODING=WINDOWS-1252"
 ) %>% 
   left_join(
@@ -35,7 +42,7 @@ str(metro_sf)
 # 2 
 summary(metro_sf$DENSITE)
 quantile(metro_sf$DENSITE)
-quantile(metro_sf$DENSITE, probs = seq(0,1,0.1))
+quantile(metro_sf$DENSITE, probs = seq(0,1,0.2))
 
 hist(metro_sf$DENSITE, breaks = seq(0,30000,100))
 
@@ -84,6 +91,8 @@ decoupage_jenks <- classIntervals(
   style = "jenks",
   n = 5
 )
+decoupage_jenks$brks
+
 plot(decoupage_jenks, pal = pal1, main = "jenks")
 table(
   cut(
@@ -99,6 +108,7 @@ decoupage_pretty <- classIntervals(
   style = "pretty",
   n = 5
 )
+decoupage_pretty$brks
 plot(decoupage_pretty, pal = pal1, main = "pretty")
 table(
   cut(
@@ -134,7 +144,7 @@ plot(metro_sf["DENSITE_cat"], border = FALSE, pal = pal1)
 # Exercice 2 --------------------------------------------------------------
 
 dep_sf <- st_read(
-  "fonds/dep_francemetro_2021.shp",
+  "fonds/France_metro/dep_francemetro_2021.shp",
   options = "ENCODING=WINDOWS-1252"
 )
 str(dep_sf)
@@ -142,7 +152,7 @@ str(dep_sf)
 tx_pauvrete <- readxl::read_xlsx("data/Taux_pauvrete_2018.xlsx")
 str(tx_pauvrete)
 
-mer <- st_read("fonds/Merf_region.shp")
+mer <- st_read("fonds/merf_2021/merf_2021.shp")
 
 # Jointure pour rajouter le taux de pauvreté à notre fond départemental
 dep_sf <- dep_sf %>% 
@@ -152,6 +162,7 @@ dep_sf <- dep_sf %>%
   )
 str(dep_sf)
 summary(dep_sf$Tx_pauvrete)
+boxplot(dep_sf$Tx_pauvrete)
 
 # Palette
 pal2 <- rev(mf_get_pal(4,"Mint"))
@@ -188,12 +199,13 @@ mf_map(
 dep_idf <- dep_sf  %>% 
   filter(code %in% c("75","92","93","94"))
 
+pdf(file = "macarte.pdf", width = 9, height = 11)
 mf_map(
   x = dep_sf, 
   var = "Tx_pauvrete", 
   type = "choro",
   breaks= c(0,13,17,25,max(dep_sf$Tx_pauvrete)),
-  pal = pal2,
+  # pal = pal2,
   leg_pos = NA
 )
 #Ouverture d'un encadré
@@ -226,14 +238,15 @@ mf_legend(
   type="choro",
   title = "Taux de pauvreté",
   val=c("","Moins de 13","De 13 à moins de 17","De 17 à moins de 25","25 ou plus"),
-  pal=pal2,
+  pal="Mint",
   pos = "left"
 )
 # Dans l'idéal on ajoute les pays étrangers
 mf_layout(
   title = "Taux de pauvreté par département en 2018",
-  credits = "Source : Insee"
+  credits = "Source : Insee - © IGN - Insee - 2021"
 )
+dev.off()
 
 # 3
 st_write(dep_sf,"dept_tx_pauvrete_2018.gpkg")
